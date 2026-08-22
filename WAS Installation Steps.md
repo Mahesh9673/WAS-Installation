@@ -396,11 +396,27 @@ Imcl:
 /root/var/ibm/InstallationManager
 [appadmin@SAMUATAPP2 tools]$
 **********************************************************************************************************************************************************+
-
-
-
 SSL Configurations:-
 
+Keystore : WebSphere/server personal certificate + private key
+TrustStore: CA Certifcates that WebSphere trusts.(Root,Inter,third-party servers CA)
+
+
+
+Security------>SSL certificate and key management---------->Key stores and certificates
+	
+CellDefaultKeyStore---> Personal Certificate----import---->
+                                    Click on * Key store file
+                                                   Key file name: Provide absolute path for keystore 
+                                                   Type : jks/PKCS12
+                                                   Key file password: password
+                                                   And Click on >> Get Key File ALiases
+                                                   (Then Alias we will see)--->Apply--->Next--->Finish--->Review------->save--->OK.
+
+CellDefaultTrustStore---->signer certificate---Add--->
+                                              Alias : Provide Alias Name
+                                              FileName: Provide absolute path for keystore 
+                                              --->Apply--->Next--->Finish--->Review------->save--->OK.
 
 
 
@@ -478,13 +494,18 @@ Resources ---------->JDBC------------->Data Sources--->New
                                             Select an existing JDBC provider --(Oracle JDBC Driver)
                                     ---------->Next
                                                   url: jdbc:oracle:thin:@//10.189.202.188:1522/QUICKUAT
-                                    ---------->Next
+                                    ---------->Next (select below security alias)
 
-                 Security ALias :-
+                 Security Alias :-
                                    1)Component-managed authentication alias:- Application provides the credentials when obtaining the connection.
-                                   2)Mapping-configuration alias:-
+                                   2)Mapping-configuration alias:- Used to map an application's resource/security identity to the configured authntication data.
                                    3)Container-managed authentication alias:- Websphere provides the DB credentials from j2c alias when creating the connection.
-                                   4)Authentication alias for XA recovery (If u selected XA D.S):-
+                                   4)Authentication alias for XA recovery (If u selected XA D.S):- used to recover a XA transaction after failure/restart.
+
+
+                                   ---------->Next---------->Finish--->Review-->Save.
+
+                                   
 
 
                               
