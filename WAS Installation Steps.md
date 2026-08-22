@@ -398,3 +398,103 @@ Imcl:
 **********************************************************************************************************************************************************+
 
 
+
+SSL Configurations:-
+
+
+
+
+
+
+
+
+
+
+**********************************************************************************************************************************************************+
+
+JDBC Configuration:
+
+
+
+Login to Console
+
+Resources ---------->JDBC------------->Data Sources.
+
+**Before Data Source we need to configure JDBC providers**
+
+**Step1 : JDBC Driver**
+make sure ORacle jdbc driver present on WAS server.
+Download the version corresponding to the Java version running on your WAS instance (e.g., ojdbc8.jar for Java 8, or ojdbc11.jar for Java 11/17).
+
+[appadmin@SAMUATAPP2 ~]$ find /Middleware14c/ -name ojdbc*
+/Middleware14c/ojdbc8.jar
+[appadmin@SAMUATAPP2 ~]$
+
+
+**Step 2 : Create JDBC Provider**
+Resources ---------->JDBC------------->JDBC Providers (select an appropriate scope e.g cell/Cluster)
+OR node/server scope depending on your requirement.
+
+Click--->New 
+         For Oracle , select
+                           Database Type: Oracle
+                           Provider Type: Oracle JDBC Driver
+                           Implementation Type: Connection Pool data source / ( XA DataSource)
+
+If the Application performs(insert,update,commit)    then  use **Connection Pool data source**                    
+If One transaction involves two resources :-                  -------->Oracle DB
+                                                Transaction---|
+                                                               ---------- MQ  (And other resources)
+
+                              Then application might use (insert, send message to MQ, commit) thne use ** XA DataSource**
+  Note : If something fails before commit, then transaction manager can rollback txn.)
+
+
+                                                                             
+Then Configure JDBC driver class path (ojdbc.jar path)
+                     /Middleware14c/ojdbc8.jar
+
+                     Click---Apply--->Next--->Finish--->Review------->save--->OK.
+
+
+
+
+**Step 3: Create JAAS / j2C Authentication Alias:**
+Security--->Global Security------>Java Authentication and Authorization Service-----> J2C authentication data----New-->
+                                                   Alias: OracleDBAlias
+                                                   User ID: {DB UserName}
+                                                   Password: {Above User Password}
+
+                               ----->Apply--->Review--save-->OK                                                                 
+
+
+
+**Step 4: Create Data Source**
+
+Resources ---------->JDBC------------->Data Sources--->New
+                                   Data source name: APPDB
+                                   JNDI name: jndi/APPDB
+                                   ------>Next
+                                            Select an existing JDBC provider --(Oracle JDBC Driver)
+                                    ---------->Next
+                                                  url: jdbc:oracle:thin:@//10.189.202.188:1522/QUICKUAT
+                                    ---------->Next
+
+                 Security ALias :-
+                                   1)Component-managed authentication alias:- Application provides the credentials when obtaining the connection.
+                                   2)Mapping-configuration alias:-
+                                   3)Container-managed authentication alias:- Websphere provides the DB credentials from j2c alias when creating the connection.
+                                   4)Authentication alias for XA recovery (If u selected XA D.S):-
+
+
+                              
+
+
+
+
+
+
+
+
+
+
