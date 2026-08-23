@@ -135,6 +135,7 @@ com.ibm.java.jdk.v8_8.0.5035.20190422_0948
 Step 4 : Install WAS 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
 [appadmin@SAMUATAPP2 tools]$
 [appadmin@SAMUATAPP2 tools]$
 [appadmin@SAMUATAPP2 tools]$ ./imcl install com.ibm.websphere.ND.v90_9.0.5001.20190828_0616 com.ibm.java.jdk.v8_8.0.5035.20190422_0948  -repositories /Middleware14c/essentials/automate/WASBase/,/Middleware14c/essentials/JAVA8/ -installationDirectory /Middleware14c/IBM/WebSphere/AppServer -acceptLicense -sP
@@ -420,6 +421,22 @@ CellDefaultTrustStore---->signer certificate---Add--->
 
 
 
+**Note:**
+
+If We set the none (CellDefaultSSLSettings) for inbound/outbound setting [Security --->SSL certificate and key management---->Manage endpoint security configurations]
+
+Then DMGR/JVM will take certificate from [Security --->SSL certificate and key management---->Key stores and certificates------------->CellDefaultKeyStore----->Personal certificates(it considers 1st certificate)
+
+If we want to configure certificate individual level for (DMGR,node,cluster,JVM.nodegaent) then we can configure using below path:
+                                          ** [Security --->SSL certificate and key management---->Manage endpoint security configurations]  **
+
+
+
+(In our current environment we have kept none for CellDefaultSSLSettings in [Security --->SSL certificate and key management---->Manage endpoint security configurations] for inbound & outbound.
+
+        And Also kept none for [  Security------>SSL certificate and key management----------> SSL configurations---------->CellDefaultSSLSettings ]
+
+So All components will use automatically from  [Security-------->SSL certificate and key management------> Key stores and certificates-------> CellDefaultKeyStore-------> Personal certificates] that to 1st certificate.
 
 
 
