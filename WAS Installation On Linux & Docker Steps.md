@@ -553,3 +553,279 @@ JVM & DB tunning parameters :-
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+==================================================================
+WebSpeher Installation Using Docker & Container
+
+
+
+WebSpeher Installation Using Docker & Container:
+
+Step 1:]  Pull the linux image from Docker HUB.
+
+              docker pull registry.access.redhat.com/ubi8/ubi:latest
+			  
+
+Step 2:] Create & Run Container
+               docker run -d  --name websphere-server -p 9043:9043  registry.access.redhat.com/ubi8/ubi:latest
+       using above it is stopping immediately.
+Run :   docker run -d   --name websphere-server   -p 9043:9043   registry.access.redhat.com/ubi8/ubi:latest   sleep infinity
+
+Step 3:] Check Container is running . Go inside it. (docker ps -a)
+            docker exec -it websphere-server /bin/bash
+       Using above i cant able to access conainer prompt.
+  
+  I used : MSYS_NO_PATHCONV=1 docker exec -it websphere-server /bin/bash	   
+
+Step 4:] Check OS
+
+             cat /etc/os-release
+			 
+			 Create wasadmin user & provide sudo access to it & create directories.
+			 
+			            groupadd wasadmin
+						useradd -g wasadmin -m -s /bin/bash wasadmin
+						passwd wasadmin   (Set Password)
+						
+						mkdir -p /opt/IBM/InstallationManager
+                        mkdir -p /opt/IBM/WebSphere
+						mkdir -p /opt/IBM/Binaries/
+						
+						chown -R wasadmin:wasadmin /opt/IBM
+						
+Step 4:] Download Installation Manager Package on Local & copy it to Conainer.
+
+          Download from IBM site.
+Copy : docker cp "C:\Users\SBI\Downloads\agent.installer.linux.gtk.x86_64_1.10.1004.20260506_0701.zip" websphere-server:/opt/IBM/Binaries/
+
+
+Step 5:] Install Installation Manager	
+              cd /opt/IBM/Binaries/
+               unzip agent.installer.linux.gtk.x86_64_1.10.1004.20260506_0701.zip	
+         
+               ./installc -acceptLicense -showProgress   -installationDirectory /opt/IBM/InstallationManager
+
+
+[root@5abdfe59293c Binaries]# pwd
+/opt/IBM/Binaries
+[root@5abdfe59293c Binaries]# unzip agent.installer.linux.gtk.x86_64_1.10.1004.20260506_0701.zip
+
+
+[root@5abdfe59293c Binaries]# pwd
+/opt/IBM/Binaries
+[root@5abdfe59293c Binaries]# ./installc -acceptLicense -showProgress   -installationDirectory /opt/IBM/InstallationManager
+                 25%                50%                75%                100%
+------------------|------------------|------------------|------------------|
+............................................................................
+Installed com.ibm.cic.agent_1.10.1004.20260506_0701 to the /opt/IBM/InstallationManager/eclipse directory.
+[root@5abdfe59293c Binaries]# pwd
+/opt/IBM/Binaries
+[root@5abdfe59293c Binaries]#
+
+[root@5abdfe59293c Binaries]# /opt/IBM/InstallationManager/eclipse/tools/imcl -version
+Installation Manager (installed)
+Version: 1.10.1.4
+Internal Version: 1.10.1004.20260506_0701
+Architecture: 64-bit
+[root@5abdfe59293c Binaries]#
+
+
+ListAvailbalePackages:
+
+sudo /opt/IBM/InstallationManager/eclipse/tools/imcl listAvailablePackages -repositories https://www.ibm.com/software/repositorymanager/com.ibm.websphere.ND.v90 -long -prompt
+
+JAVA:
+sudo /opt/IBM/InstallationManager/eclipse/tools/imcl listAvailablePackages -repositories https://www.ibm.com/software/repositorymanager/com.ibm.java.jdk.v8 -long -prompt
+
+Install:
+
+sudo /opt/IBM/InstallationManager/eclipse/tools/imcl install com.ibm.java.jdk.v8_8.0.8071.20260813_0837 com.ibm.websphere.ND.v90_9.0.5029.20260827_1654 -repositories https://www.ibm.com/software/repositorymanager/com.ibm.java.jdk.v8,https://www.ibm.com/software/repositorymanager/com.ibm.websphere.ND.v90 -installationDirectory /opt/IBM/WebSphere/AppServer -acceptLicense -showProgress -prompt
+
+DMGR(Profile Creation):
+
+/opt/IBM/WebSphere/AppServer/bin/manageprofiles.sh -create -profileName DMGR01 -profilePath /opt/IBM/WebSphere/AppServer/profiles/DMGR01 -templatePath /opt/IBM/WebSphere/AppServer/profileTemplates/dmgr -nodeName Dmgr01Node -cellName AppSvr01 -hostname 5abdfe59293c -serverType DEPLOYMENT_MANAGER -enableAdminSecurity true -adminUserName wasadmin9 -adminPassword Mahesh123 -startingPort 9041
+
+CWMBU0002I: The deployment manager profile template has been deprecated and replaced by the management profile template with a deployment manager server.
+INSTCONFPARTIALSUCCESS: The profile now exists, but errors occurred. For more information, consult /opt/IBM/WebSphere/AppServer/logs/manageprofiles/DMGR01_create.log.
+[wasadmin@5abdfe59293c ~]$
+
+
+
+Node(Profile Creation):
+
+/opt/IBM/WebSphere/AppServer/bin/manageprofiles.sh -create -profileName AppSrv01 -profilePath  /opt/IBM/WebSphere/AppServer/profiles/AppSrv01 -templatePath /opt/IBM/WebSphere/AppServer/profileTemplates/managed -nodeName AppSvr01Node -hostname 5abdfe59293c
+
+INSTCONFPARTIALSUCCESS: The profile now exists, but errors occurred. For more information, consult /opt/IBM/WebSphere/AppServer/logs/manageprofiles/AppSrv01_create.log.
+[wasadmin@5abdfe59293c ~]$
+
+
+One issue is there now:
+
+I have configured DMGR console port 9041(nonSSL) & 9042(SSL) But ,docker  port Mapping i already done on 9043 . Due to this i am not able access the console.
+
+Now i have two choices.
+                       1)Delete existing DMGR profile & create new DMGR profile again & mapp port as 9043 .
+                       2) Create New image from ur container(DMGR Installed). & then create new conatiner with new images & mapp DMGR ports to it.
+
+
+      I am going with 2nd option:
+                    i) Create new image from conatiner.(All Installations will come)
+								docker commit websphere-server websphere-learning:latest
+					ii)Verify:
+					            docker images | grep websphere-learning
+                    iii)Stop the old container:
+					             docker stop websphere-server
+					iv)Start a new container with the correct ports:
+                                 docker run -d   --name websphere-server-new   -p 9041:9041   -p 9042:9042   -p 9043:9043   -p 9044:9044   websphere-learning:latest   sleep infinity
+                    v)then go to new container 
+                               MSYS_NO_PATHCONV=1 docker exec -it websphere-server-new /bin/bash
+                    vi) Start DMGR:
+					            /opt/IBM/WebSphere/AppServer/profiles/DMGR01/bin/startManager.sh
+								
+								It thows error : UnknownHostException: 5abdfe59293c
+                            It will fail beacuse while profile creation we have given the hostname . this current conainer is reffering that old container.
+                    vii)  just add below entry in /etc/hosts & verify. (Add old container id & ip)
+                          			172.17.0.2 5abdfe59293c
+						verify : getent hosts 5abdfe59293c  ---------(it returns. If not returns anything need to check.)
+					
+					viii) Now start DMGR. it will start successful now.
+					                /opt/IBM/WebSphere/AppServer/profiles/DMGR01/bin/startManager.sh
+						
+
+Now Go to chrome & type  " https://localhost:9042/ibm/console "  u are able to access WebSphere Console.
+
+Note:  Now every time u need to use that old hostname. (addnode,syncnode etc.)
+
+Add/Federate Node:
+
+
+
+                       [wasadmin@c0579f7fd7ef bin]$ ./addNode.sh 5abdfe59293c 9044
+                        ADMU0116I: Tool information is being logged in file
+                                   /opt/IBM/WebSphere/AppServer/profiles/AppSrv01/logs/addNode.log
+                        ADMU0128I: Starting tool with the AppSrv01 profile
+                        Realm/Cell Name: <default>
+                        Username: wasadmin9
+                        Password:
+                         CWPKI0309I: All signers from remote keystore already exist in local keystore.
+                        ADMU0001I: Begin federation of node AppSvr01Node with Deployment Manager at
+                                   5abdfe59293c:9044.
+                        ADMU0009I: Successfully connected to Deployment Manager Server:
+                                   5abdfe59293c:9044
+                        ADMU0507I: No servers found in configuration under:
+                                   /opt/IBM/WebSphere/AppServer/profiles/AppSrv01/config/cells/5abdfe59293cNode01Cell/nodes/AppSvr01Node/servers
+                        ADMU2010I: Stopping all server processes for node AppSvr01Node
+                        ADMU0024I: Deleting the old backup directory.
+                        ADMU0015I: Backing up the original cell repository.
+                        ADMU0012I: Creating Node Agent configuration for node: AppSvr01Node
+                        ADMU0014I: Adding node AppSvr01Node configuration to cell: AppSvr01
+                        ADMU0016I: Synchronizing configuration between node and cell.
+                        ADMU0018I: Launching Node Agent process for node: AppSvr01Node
+                        ADMU0020I: Reading configuration for Node Agent process: nodeagent
+                        ADMU0022I: Node Agent launched. Waiting for initialization status.
+                        ADMU0030I: Node Agent initialization completed successfully. Process id is:
+                                   1052
+                        
+                        
+                        ADMU0300I: The node AppSvr01Node was successfully added to the AppSvr01 cell.
+                        
+                        
+                        ADMU0306I: Note:
+                        ADMU0302I: Any cell-level documents from the standalone AppSvr01 configuration
+                                   have not been migrated to the new cell.
+                        ADMU0307I: You might want to:
+                        ADMU0303I: Update the configuration on the AppSvr01 Deployment Manager with
+                                   values from the old cell-level documents.
+                        
+                        
+                        ADMU0306I: Note:
+                        ADMU0304I: Because -includeapps was not specified, applications installed on
+                                   the standalone node were not installed on the new cell.
+                        ADMU0307I: You might want to:
+                        ADMU0305I: Install applications onto the AppSvr01 cell using wsadmin $AdminApp
+                                   or the Administrative Console.
+                        
+                        
+                        ADMU0003I: Node AppSvr01Node has been successfully federated.
+                        [wasadmin@c0579f7fd7ef bin]$
+                        
+
+Start Sync Node :
+
+After addnode.sh  Nodeagent will start .( we cant able to do sync Node If node agenet is up.)
+Stop Node Agent & then run sync node:
+                                        /opt/IBM/WebSphere/AppServer/profiles/AppSrv01/bin/stopNode.sh
+										
+										/opt/IBM/WebSphere/AppServer/profiles/AppSrv01/bin/syncNode.sh 5abdfe59293c 9044
+										
+										ADMU0116I: Tool information is being logged in file
+                                                   /opt/IBM/WebSphere/AppServer/profiles/AppSrv01/logs/syncNode.log
+                                        ADMU0128I: Starting tool with the AppSrv01 profile
+                                        Realm/Cell Name: <default>
+                                        Username: wasadmin9
+                                        Password:
+                                         ADMU0401I: Begin syncNode operation for node AppSvr01Node with Deployment
+                                                   Manager 5abdfe59293c: 9044
+                                        ADMU0016I: Synchronizing configuration between node and cell.
+                                        ADMU0402I: The configuration for node AppSvr01Node has been synchronized with
+                                                   Deployment Manager 5abdfe59293c: 9044
+
+
+Now EveryTime is will ask password for sync Node,Start Node & Stop Node.
+
+Password Less Configuration:
+-------------------------------
+                        cd  /opt/IBM/WebSphere/AppServer/profiles/AppSrv01/properties
+						 
+						 change below 2 properties file:
+                         take backup before changing below files.
+                         1)ipc.client.props                                                       2)soap.client.props 
+                         
+                         com.ibm.IPC.securityEnabled=false---->true                                   com.ibm.SOAP.securityEnabled=false---------true
+                         com.ibm.IPC.loginUserid={username}                                           com.ibm.SOAP.loginUserid={username}   
+                         com.ibm.IPC.loginPassword={password}                                         com.ibm.SOAP.loginPassword={password}
+                         
+			provide username & password in both files.
+						 
+EveryOne can see username & password form that file.
+
+Encrypt the username & password using below commands:
+-------------------------------------------------------
+                        cd /opt/IBM/WebSphere/AppServer/profiles/AppSrv01/bin
+                 ./PropFilePasswordEncoder.sh /opt/IBM/WebSphere/AppServer/profiles/AppSrv01/properties/ipc.client.props com.ibm.IPC.loginPassword -noBackup
+                 ./PropFilePasswordEncoder.sh /opt/IBM/WebSphere/AppServer/profiles/AppSrv01/properties/soap.client.props com.ibm.SOAP.loginPassword -noBackup
+      			
+
+
+Same we can proceed fro DMGR profile Also:
+
+Now It will not ask for password for any tasks(Stop DMGR,Stop Node,syncNode etc.)
+
+
+
+											
+
+
+
+
+
